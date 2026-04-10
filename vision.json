@@ -1,0 +1,83 @@
+{
+  "meta": {
+    "createdAt": "2026-04-09T20:00:00Z",
+    "updatedAt": "2026-04-09T20:00:00Z",
+    "version": "1.0",
+    "plaidVersion": "1.0"
+  },
+  "creator": {
+    "name": "Lasse",
+    "expertise": "Fachinformatiker für Anwendungsentwicklung mit Schwerpunkt Logistik/Fulfillment",
+    "background": "Als Entwickler in der Logistik sehe ich ständig, wie viel Potenzial in der Digitalisierung operativer Prozesse steckt — aber die vorhandenen Lösungen sind zu komplex für kleinere Unternehmen. Meine Kombination aus Softwareentwicklung und täglicher Fulfillment-Erfahrung gibt mir einen unfairen Vorteil: Ich verstehe, was Lagermitarbeiter und Spediteure wirklich brauchen — nicht, was ein Berater sich am Schreibtisch ausdenkt."
+  },
+  "purpose": {
+    "whoYouHelp": "Kleine bis mittelgroße Fulfillment- und Logistikunternehmen, die ihre Rampenplanung heute mit Excel, Telefon und E-Mail koordinieren und kein passendes, leichtgewichtiges Tool finden",
+    "problemYouSolve": "Anlieferungen an Lager-Rampen werden per Telefon, E-Mail und Excel-Listen koordiniert. Zeitfenster werden grob abgestimmt, Überbuchungen sind häufig, mehrere LKW kommen gleichzeitig an, Verspätungen werden nicht erkannt und die gesamte Planung bricht bei Abweichungen zusammen.",
+    "desiredTransformation": "Von chaotischer, manueller Rampenabstimmung hin zu automatisierter, verlässlicher Planung. Spediteure buchen selbstständig, das Lager hat volle Übersicht und Kontrolle, Verspätungen werden frühzeitig erkannt und Slots dynamisch angepasst — ohne einen einzigen Anruf.",
+    "whyYou": "Als Fachinformatiker in einem Fulfillment-Unternehmen erlebe ich das Problem jeden Tag aus erster Hand. Ich kenne die operative Realität am Hof und an der Rampe und kann gleichzeitig die technische Lösung selbst bauen. Diese Kombination aus Branchenkenntnis und Entwicklungskompetenz ist mein unfairer Vorteil."
+  },
+  "product": {
+    "name": "SlotDock",
+    "oneLiner": "SlotDock ist die Online-Rampenbuchung für Fulfillment-Unternehmen — Spediteure reservieren Zeitfenster selbst, das Lager plant stressfrei.",
+    "howItWorks": "Das Lager loggt sich ein, richtet Rampen und Zeitfenster ein. Spediteure erhalten einen einfachen Weblink — kein Login nötig — und buchen ihren Slot selbst. Das System verhindert Überbuchungen automatisch. Am Tag der Anlieferung trackt SlotDock Verspätungen und schiebt Slots bei Bedarf dynamisch um.",
+    "keyCapabilities": [
+      "Rampenverwaltung mit flexiblen Kapazitäts- und Prioritätsregeln",
+      "Slot-Buchung per Weblink mit Spediteur-Selbstverwaltung",
+      "Echtzeit-ETA-Abgleich mit GPS-Integration",
+      "Intelligente Umplanung: automatische Slot-Verschiebung und Neuvergabe",
+      "Analytics-Dashboard mit Auslastungsstatistiken und Prognosen"
+    ],
+    "platform": "web",
+    "marketDifferentiation": "Anders als klassische YMS-Systeme ist SlotDock kein Modul in einem riesigen WMS, sondern ein eigenständiges Tool, das genau ein Problem richtig löst — und das ohne Beraterkosten oder monatelange Einführung.",
+    "magicMoment": "Der Disponent öffnet morgens sein Dashboard und sieht auf einen Blick: alle Anlieferungen des Tages, sauber auf Rampen verteilt, keine Überschneidungen — und das, ohne einen einzigen Anruf gemacht zu haben."
+  },
+  "audience": {
+    "primaryUser": "Markus, 50, Geschäftsführer eines kleinen Logistikunternehmens mit 3 Rampen. Er macht die Rampenplanung selbst, weil er kein Tool hat, das einfach genug ist. Die großen WMS-Anbieter wollen ihm Jahresverträge für 20.000€+ verkaufen — für ein Problem, das eigentlich lösbar sein sollte.",
+    "secondaryUsers": [
+      "Spediteure und Fahrer — sie buchen die Slots und melden Verspätungen über den Buchungslink, ohne eigenen Login. Ihr Interesse: schnell einen Slot bekommen, nicht ewig in der Warteschlange am Hof stehen.",
+      "Sachbearbeiter im Wareneingang — sie sehen im Dashboard, was als nächstes kommt, und bestätigen die Anlieferung vor Ort. Ihr Interesse: keine Überraschungen mehr, bessere Vorbereitung auf den Tag.",
+      "Auftraggeber und Versender — sie wollen wissen, ob ihre Ware pünktlich angeliefert wurde. Eventuell ein eingeschränkter Statusblick auf ihre Sendungen. Ihr Interesse: Transparenz, ohne das Lager anrufen zu müssen."
+    ],
+    "currentAlternatives": "Excel-Listen und Outlook-Kalender für die manuelle Planung mit Telefonabstimmung. Enterprise-Lösungen wie Transporeon, Cargoclix oder SAP Yard Management, die mächtig aber zu teuer und komplex für kleine Unternehmen sind. Oder gar kein Tool — First Come First Served am Hof, das Problem wird einfach ausgesessen.",
+    "frustrations": "Funktional: Excel hat keine Logik — es verhindert keine Doppelbuchungen, kennt keine Rampenkapazitäten und kann nicht warnen wenn ein LKW zu spät kommt. Emotional: Es fühlt sich an wie Zeitverschwendung — jeden Tag die gleichen Anrufe und Konflikte, obwohl das Problem eigentlich simpel ist. Enterprise-Tools fühlen sich an wie Kanonen auf Spatzen. Praktisch: Die großen Lösungen kosten zu viel Zeit und Geld, und 'gar nichts tun' kostet in Wartezeiten und Stress, die niemand misst."
+  },
+  "business": {
+    "revenueModel": "subscription",
+    "initialGoal": "MVP ist live, 2–3 zahlende Kunden, 10+ Spediteure haben aktiv über Buchungslinks Slots gebucht, und es gibt belastbare Daten aus dem echten Betrieb, dass das System im Alltag funktioniert.",
+    "sixMonthVision": "10–15 Kunden, davon 2–3 im Professional-Tier. SlotDock ist auf ein bis zwei Logistik-Events vorgestellt worden, ein erster Erfahrungsbericht eines Kunden dient als Referenz. Lasse arbeitet nur noch Teilzeit im alten Job.",
+    "constraints": "Vollzeitjob mit Abend- und Wochenend-Entwicklung. Budget unter 100€/Monat für Infrastruktur und Tools. Technisch fit als Fachinformatiker, aber Marketing und Vertrieb sind Neuland. Entwicklung mit Claude Code, Ziel ist MVP in unter einem Monat. Erstes eigenes SaaS-Produkt von Null aufbauen und betreiben.",
+    "goToMarket": "Build in Public auf LinkedIn — die deutsche Logistikbranche ist dort aktiv. Posts über den Entwicklungsprozess, das Problem und die Lösung. Promotion über eigene Portfolio-Seite und Präsenz in Logistik-Foren und Communities. Parallel direktes Ansprechen von Kontakten aus dem beruflichen Netzwerk."
+  },
+  "feeling": {
+    "brandPersonality": "Der smarte Pragmatiker — schnörkellos, modern, auf den Punkt. Redet nicht viel, liefert aber. Hat eine gewisse technische Eleganz, wirkt aber nie einschüchternd.",
+    "visualMood": "Notion-like Calm — warm, aufgeräumt, fast minimalistisch. Weiche Farben, runde Ecken, leichte Schatten. Wirkt einladend und zugänglich — auch für Leute, die nicht technikaffin sind.",
+    "toneOfVoice": "Sachlich-professionell — wie ein guter Geschäftsbrief. Sagt 'Buchungsbestätigung: Rampe 3, 14:00–14:45 Uhr.' Bei Fehlern: 'Zeitfenster nicht verfügbar. Bitte wählen Sie eine Alternative.' Kein Smalltalk, volle Verlässlichkeit.",
+    "antiPatterns": "Nie überdesignt oder verspielt — keine Animationen um der Animation willen, keine bunten Illustrationen, keine Gamification-Elemente. Nie überladen oder komplex — keine verschachtelten Menüs, keine Feature-Walls, keine Konfiguration die einen Berater erfordert. Nie unpersönlich oder Enterprise-mäßig — keine grauen SAP-Oberflächen, keine 90er-Jahre-Formularästhetik, keine kryptischen Fehlercodes."
+  },
+  "techStack": {
+    "appType": "web",
+    "frontend": {
+      "choice": "Next.js",
+      "rationale": "Größtes Ökosystem, beste Integration mit AI-Coding-Tools wie Claude Code, riesige Community, jedes Problem ist gelöst"
+    },
+    "backend": {
+      "choice": "Supabase",
+      "rationale": "Open-Source Backend mit managed PostgreSQL, Auth, Realtime und Storage in einem Paket. Flexibel für SaaS und Einmalkauf-Modell, großzügiges Free-Tier, gut dokumentiert. Daten bleiben in PostgreSQL — kein Vendor Lock-in."
+    },
+    "database": {
+      "choice": "PostgreSQL (via Supabase)",
+      "rationale": "Industriestandard-Datenbank, inklusive bei Supabase, kein separates Setup nötig. Perfekt für relationale Daten wie Rampen, Slots und Buchungen."
+    },
+    "auth": {
+      "choice": "Supabase Auth",
+      "rationale": "Direkt in Supabase integriert, zero Config, unterstützt Social Login, Magic Links und E-Mail/Passwort. Alles unter einem Dach, kein zusätzlicher Service nötig."
+    },
+    "payments": {
+      "choice": "Stripe",
+      "rationale": "Industriestandard, größtes Ökosystem, unterstützt sowohl Subscriptions als auch Einmalkäufe. Hervorragende Next.js-Integration und Dokumentation."
+    }
+  },
+  "tooling": {
+    "codingAgent": "claude-code"
+  }
+}

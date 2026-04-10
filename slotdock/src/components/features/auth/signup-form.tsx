@@ -6,6 +6,8 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 const signupSchema = z.object({
   name: z.string().min(1, "Name ist erforderlich"),
@@ -17,6 +19,8 @@ type SignupFormData = z.infer<typeof signupSchema>;
 
 function SignupForm() {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
   const {
     register,
     handleSubmit,
@@ -27,9 +31,27 @@ function SignupForm() {
 
   async function onSubmit(data: SignupFormData) {
     setLoading(true);
+    setError(null);
     try {
-      // TODO: Implement Supabase auth signup
-      console.log("Signup:", data);
+      const supabase = createClient();
+      const { error: signUpError } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          data: { full_name: data.name },
+        },
+      });
+
+      if (signUpError) {
+        setError(signUpError.message);
+        return;
+      }
+
+      router.push("/dashboard");
+      router.refresh();
+    } catch (err) {
+      console.error("Signup error:", err);
+      setError(err instanceof Error ? err.message : "Ein unerwarteter Fehler ist aufgetreten.");
     } finally {
       setLoading(false);
     }
@@ -61,6 +83,9 @@ function SignupForm() {
         error={errors.password?.message}
         {...register("password")}
       />
+      {error && (
+        <p className="text-sm text-error">{error}</p>
+      )}
       <Button type="submit" className="w-full" loading={loading}>
         Registrieren
       </Button>

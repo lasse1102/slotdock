@@ -93,6 +93,7 @@ slotdock/
 Fortschritt wird in `docs/product-roadmap.md` getrackt. Tasks mit `- [x]` sind erledigt.
 
 **Phase 0 — Foundation & Setup:** abgeschlossen (10/10 Tasks)
+**Phase 1 — Warehouse & Dock Management:** abgeschlossen (6/6 Tasks)
 
 ## Referenzdokumente
 

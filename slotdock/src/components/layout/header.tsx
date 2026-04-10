@@ -1,6 +1,8 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Menu, LogOut } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 interface HeaderProps {
   warehouseName?: string;
@@ -8,6 +10,15 @@ interface HeaderProps {
 }
 
 function Header({ warehouseName, onMenuClick }: HeaderProps) {
+  const router = useRouter();
+
+  async function handleLogout() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
+
   return (
     <header className="flex h-16 items-center justify-between border-b border-border bg-surface px-4 md:px-6">
       <div className="flex items-center gap-3">
@@ -21,7 +32,10 @@ function Header({ warehouseName, onMenuClick }: HeaderProps) {
           <h1 className="text-sm font-semibold text-text">{warehouseName}</h1>
         )}
       </div>
-      <button className="flex items-center gap-2 rounded-[6px] px-3 py-2 text-sm text-text-secondary hover:bg-bg hover:text-text transition-colors">
+      <button
+        onClick={handleLogout}
+        className="flex items-center gap-2 rounded-[6px] px-3 py-2 text-sm text-text-secondary hover:bg-bg hover:text-text transition-colors"
+      >
         <LogOut size={16} strokeWidth={1.5} />
         <span className="hidden sm:inline">Abmelden</span>
       </button>

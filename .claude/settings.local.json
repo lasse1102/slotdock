@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx next:*)",
+      "Bash(mkdir -p \"C:/Users/lasse/Documents/Claude Project/slotdock/src/app/api/warehouses/[warehouseId]/docks\")",
+      "Bash(mkdir -p \"C:/Users/lasse/Documents/Claude Project/slotdock/src/app/api/docks/[id]\")",
+      "Bash(gh auth:*)",
+      "Bash(git:*)",
+      "Bash(where gh:*)"
+    ]
+  }
+}
