@@ -136,6 +136,7 @@ export async function GET(
   const existingBookings = (bookings ?? []) as Booking[];
 
   // Generate slots for each dock
+  const now = new Date();
   const slots: {
     dock_id: string;
     start: string;
@@ -176,6 +177,9 @@ export async function GET(
         break;
       }
 
+      // Past slots are never available
+      const isInPast = isBefore(slotStart, now);
+
       // Count overlapping non-cancelled bookings for this dock and time window
       const overlapCount = existingBookings.filter(
         (b) =>
@@ -184,7 +188,7 @@ export async function GET(
           new Date(b.slot_end) > slotStart
       ).length;
 
-      const available = overlapCount < dock.max_concurrent;
+      const available = !isInPast && overlapCount < dock.max_concurrent;
 
       slots.push({
         dock_id: dock.id,
