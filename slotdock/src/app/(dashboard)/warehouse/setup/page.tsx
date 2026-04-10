@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,11 @@ export default function WarehouseSetupPage() {
   const [bookingToken, setBookingToken] = useState<string | null>(null);
   const [docks, setDocks] = useState<DockEntry[]>([]);
   const [copied, setCopied] = useState(false);
+  const [origin, setOrigin] = useState("");
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
 
   async function handleWarehouseSubmit(data: WarehouseFormValues) {
     setWarehouseData(data);
@@ -90,8 +95,8 @@ export default function WarehouseSetupPage() {
   }
 
   function getBookingUrl() {
-    if (typeof window === "undefined" || !bookingToken) return "";
-    return `${window.location.origin}/book/${bookingToken}`;
+    if (!origin || !bookingToken) return "";
+    return `${origin}/book/${bookingToken}`;
   }
 
   async function handleCopy() {

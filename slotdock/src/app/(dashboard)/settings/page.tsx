@@ -28,12 +28,17 @@ export default function SettingsPage() {
   const [regenerateModal, setRegenerateModal] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [bookingToken, setBookingToken] = useState<string | null>(null);
+  const [origin, setOrigin] = useState("");
 
   const {
     register,
     handleSubmit,
     reset,
   } = useForm<ProfileFormValues>();
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
 
   useEffect(() => {
     async function fetchProfile() {
@@ -99,8 +104,8 @@ export default function SettingsPage() {
   }
 
   function getBookingUrl() {
-    if (typeof window === "undefined" || !bookingToken) return "";
-    return `${window.location.origin}/book/${bookingToken}`;
+    if (!origin || !bookingToken) return "";
+    return `${origin}/book/${bookingToken}`;
   }
 
   async function handleCopy() {
