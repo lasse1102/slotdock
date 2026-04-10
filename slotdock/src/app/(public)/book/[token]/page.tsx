@@ -33,6 +33,7 @@ interface SlotInfo {
 
 interface AvailabilityResponse {
   warehouse: WarehouseInfo;
+  max_advance_booking_days: number;
   docks: DockInfo[];
   slots: SlotInfo[];
 }
@@ -85,6 +86,7 @@ export default function PublicBookingPage() {
 
         const data: AvailabilityResponse = await res.json();
         setWarehouse(data.warehouse);
+        setMaxAdvanceDays(data.max_advance_booking_days);
         setDocks(data.docks);
         setSlots(data.slots);
       } catch {
@@ -119,7 +121,8 @@ export default function PublicBookingPage() {
   };
 
   const handleSlotUnavailable = () => {
-    setSelectedSlot(null);
+    // Keep selectedSlot so the form stays mounted and preserves user input.
+    // Refresh availability so the slot grid updates.
     fetchAvailability(selectedDate);
   };
 

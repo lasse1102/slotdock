@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { createServiceClient } from "@/lib/supabase/service";
+import { rateLimit } from "@/lib/rate-limit";
 import { parse, addDays, addMinutes, startOfDay, isBefore } from "date-fns";
 import type { Warehouse, Dock, DockSchedule, Booking } from "@/lib/types";
 
@@ -18,6 +19,10 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ token: string }> }
 ) {
+  // Rate limit: 60 requests per minute per IP
+  const rateLimited = rateLimit(request, { limit: 60, windowMs: 60_000 });
+  if (rateLimited) return rateLimited;
+
   const { token } = await params;
   const supabase = createServiceClient();
 
@@ -95,6 +100,7 @@ export async function GET(
   if (activeDocks.length === 0) {
     return NextResponse.json({
       warehouse: formatWarehouse(wh),
+      max_advance_booking_days: wh.max_advance_booking_days,
       docks: [],
       slots: [],
     });
@@ -115,17 +121,17 @@ export async function GET(
     scheduleMap.set(s.dock_id, s);
   }
 
-  // Fetch non-cancelled bookings for the requested date across all active docks
+  // Fetch non-cancelled bookings that overlap the requested date across all active docks
+  // Use overlap detection: slot_start < day_end AND slot_end > day_start
   const dayStart = `${dateParam}T00:00:00`;
-  const dayEnd = `${dateParam}T23:59:59`;
 
   const { data: bookings } = await supabase
     .from("bookings")
     .select("*")
     .in("dock_id", dockIds)
     .neq("status", "cancelled")
-    .gte("slot_start", dayStart)
-    .lte("slot_start", dayEnd);
+    .lt("slot_start", `${dateParam}T23:59:59.999`)
+    .gt("slot_end", dayStart);
 
   const existingBookings = (bookings ?? []) as Booking[];
 
@@ -193,6 +199,7 @@ export async function GET(
 
   return NextResponse.json({
     warehouse: formatWarehouse(wh),
+    max_advance_booking_days: wh.max_advance_booking_days,
     docks: activeDocks.map((d) => ({ id: d.id, name: d.name })),
     slots,
   });

@@ -38,7 +38,7 @@ interface BookingFormProps {
 }
 
 const bookingFormSchema = z.object({
-  carrier_company: z.string().min(1, "Firmenname ist erforderlich").max(255),
+  carrier_company: z.string().trim().min(1, "Firmenname ist erforderlich").max(255),
   carrier_contact_name: z.string().max(255).optional().or(z.literal("")),
   carrier_email: z
     .string()

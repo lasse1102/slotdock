@@ -1,13 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { createServiceClient } from "@/lib/supabase/service";
-import { addMinutes, addDays, isBefore, startOfDay, parseISO, getDay, getHours, getMinutes } from "date-fns";
-import type { Warehouse, Dock, Booking } from "@/lib/types";
+import { rateLimit } from "@/lib/rate-limit";
+import { addMinutes, addDays, isBefore, startOfDay, parseISO, getHours, getMinutes } from "date-fns";
+import type { Warehouse, Dock, DockSchedule, Booking } from "@/lib/types";
 
 const bookingSchema = z.object({
   dock_id: z.string().uuid("dock_id muss eine gültige UUID sein"),
   slot_start: z.string().datetime({ message: "slot_start muss ein gültiges ISO-8601-Datum sein" }),
-  carrier_company: z.string().min(1, "Firmenname ist erforderlich").max(255),
+  carrier_company: z.string().trim().min(1, "Firmenname ist erforderlich").max(255),
   carrier_contact_name: z.string().max(255).optional(),
   carrier_email: z.string().email("Ungültige E-Mail-Adresse").max(255).optional(),
   carrier_phone: z.string().max(50).optional(),
@@ -19,9 +20,11 @@ const bookingSchema = z.object({
 /** Generate an 8-character uppercase alphanumeric confirmation code */
 function generateConfirmationCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // No I/O/0/1 to avoid confusion
+  const bytes = new Uint8Array(8);
+  crypto.getRandomValues(bytes);
   let code = "";
   for (let i = 0; i < 8; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
+    code += chars.charAt(bytes[i] % chars.length);
   }
   return code;
 }
@@ -56,6 +59,10 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ token: string }> }
 ) {
+  // Rate limit: 20 booking attempts per minute per IP
+  const rateLimited = rateLimit(request, { limit: 20, windowMs: 60_000 });
+  if (rateLimited) return rateLimited;
+
   const { token } = await params;
   const supabase = createServiceClient();
 
@@ -118,9 +125,34 @@ export async function POST(
 
   const activeDock = dock as Dock;
 
-  // 4. Calculate slot_end from slot_start + default_slot_duration_minutes
+  // 4. Fetch dock_schedules override for the requested day
   const slotStart = parseISO(slotStartStr);
-  const slotEnd = addMinutes(slotStart, wh.default_slot_duration_minutes);
+  const dayOfWeek = slotStart.getDay(); // 0 = Sunday
+
+  const { data: scheduleRows } = await supabase
+    .from("dock_schedules")
+    .select("*")
+    .eq("dock_id", dock_id)
+    .eq("day_of_week", dayOfWeek)
+    .limit(1);
+
+  const schedule = (scheduleRows?.[0] as DockSchedule | undefined) ?? null;
+
+  // Check if dock is closed on this day
+  if (schedule?.is_closed) {
+    return NextResponse.json(
+      { error: "DOCK_CLOSED", message: "Die Rampe ist an diesem Tag geschlossen" },
+      { status: 400 }
+    );
+  }
+
+  // Use dock schedule overrides or warehouse defaults
+  const effectiveOpeningTime = schedule?.opening_time ?? wh.opening_time;
+  const effectiveClosingTime = schedule?.closing_time ?? wh.closing_time;
+  const effectiveSlotDuration = schedule?.slot_duration_minutes ?? wh.default_slot_duration_minutes;
+
+  // Calculate slot_end using effective duration
+  const slotEnd = addMinutes(slotStart, effectiveSlotDuration);
 
   // 5. Validate slot_start is not in the past
   const now = new Date();
@@ -133,7 +165,7 @@ export async function POST(
 
   // 6. Validate not beyond max_advance_booking_days
   const today = startOfDay(now);
-  const maxDate = addDays(today, wh.max_advance_booking_days + 1); // end of last allowed day
+  const maxDate = addDays(today, wh.max_advance_booking_days + 1);
   if (!isBefore(slotStart, maxDate)) {
     return NextResponse.json(
       {
@@ -144,13 +176,13 @@ export async function POST(
     );
   }
 
-  // 7. Validate slot falls within warehouse opening hours
+  // 7. Validate slot falls within effective opening hours
   const slotHour = getHours(slotStart);
   const slotMinute = getMinutes(slotStart);
   const slotTimeMinutes = slotHour * 60 + slotMinute;
 
-  const [openH, openM] = wh.opening_time.split(":").map(Number);
-  const [closeH, closeM] = wh.closing_time.split(":").map(Number);
+  const [openH, openM] = effectiveOpeningTime.split(":").map(Number);
+  const [closeH, closeM] = effectiveClosingTime.split(":").map(Number);
   const openingMinutes = openH * 60 + openM;
   const closingMinutes = closeH * 60 + closeM;
 
@@ -162,7 +194,7 @@ export async function POST(
     return NextResponse.json(
       {
         error: "OUTSIDE_HOURS",
-        message: `Buchungen sind nur zwischen ${wh.opening_time} und ${wh.closing_time} möglich`,
+        message: `Buchungen sind nur zwischen ${effectiveOpeningTime} und ${effectiveClosingTime} möglich`,
       },
       { status: 400 }
     );
