@@ -10,6 +10,7 @@ Fortschritt wird in `docs/product-roadmap.md` getrackt. Tasks mit `- [x]` sind e
 
 - **Phase 0 — Foundation & Setup:** abgeschlossen (10/10 Tasks)
 - **Phase 1 — Warehouse & Dock Management:** abgeschlossen (6/6 Tasks)
+- **Phase 2 — Public Slot Booking:** abgeschlossen (5/5 Tasks)
 
 ## Referenzdokumente
 
