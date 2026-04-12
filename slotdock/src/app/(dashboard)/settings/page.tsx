@@ -17,6 +17,7 @@ interface ProfileFormValues {
   full_name: string;
   company_name: string;
   phone: string;
+  email: string;
 }
 
 export default function SettingsPage() {
@@ -63,6 +64,7 @@ export default function SettingsPage() {
           full_name: data.full_name || "",
           company_name: data.company_name || "",
           phone: data.phone || "",
+          email: data.email || "",
         });
         setNotifyNewBookings(data.notify_new_bookings ?? true);
       }
@@ -84,6 +86,8 @@ export default function SettingsPage() {
 
     try {
       const supabase = createClient();
+
+      // Update profile fields
       const { error } = await supabase
         .from("profiles")
         .update({
@@ -95,6 +99,22 @@ export default function SettingsPage() {
 
       if (error) {
         toast("Fehler beim Speichern des Profils", "error");
+        return;
+      }
+
+      // Handle email change via Supabase Auth
+      const trimmedEmail = data.email.trim().toLowerCase();
+      if (trimmedEmail && trimmedEmail !== profile.email) {
+        const { error: emailError } = await supabase.auth.updateUser({
+          email: trimmedEmail,
+        });
+
+        if (emailError) {
+          toast("Fehler beim Ändern der E-Mail: " + emailError.message, "error");
+          return;
+        }
+
+        toast("Profil gespeichert. Bitte bestätigen Sie die neue E-Mail-Adresse über den Link in Ihrem Postfach.", "success");
         return;
       }
 
@@ -153,6 +173,9 @@ export default function SettingsPage() {
     setNotifyToggling(true);
     const newValue = !notifyNewBookings;
 
+    // Optimistic update
+    setNotifyNewBookings(newValue);
+
     try {
       const supabase = createClient();
       const { error } = await supabase
@@ -161,11 +184,13 @@ export default function SettingsPage() {
         .eq("id", profile.id);
 
       if (error) {
-        toast("Fehler beim Speichern der Einstellung", "error");
+        // Revert on failure
+        setNotifyNewBookings(!newValue);
+        console.error("Notification toggle error:", error);
+        toast("Fehler beim Speichern der Einstellung. Bitte führen Sie die Datenbank-Migration 005 aus.", "error");
         return;
       }
 
-      setNotifyNewBookings(newValue);
       toast(
         newValue
           ? "E-Mail-Benachrichtigungen aktiviert"
@@ -173,6 +198,8 @@ export default function SettingsPage() {
         "success"
       );
     } catch {
+      // Revert on failure
+      setNotifyNewBookings(!newValue);
       toast("Netzwerkfehler", "error");
     } finally {
       setNotifyToggling(false);
@@ -205,8 +232,9 @@ export default function SettingsPage() {
           <Input
             id="email"
             label="E-Mail"
-            value={profile?.email || ""}
-            disabled
+            type="email"
+            placeholder="ihre@email.de"
+            {...register("email")}
           />
           <Input
             id="full_name"
