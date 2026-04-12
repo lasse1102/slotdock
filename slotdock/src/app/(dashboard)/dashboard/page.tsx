@@ -24,6 +24,7 @@ export default function DashboardPage() {
 
   const { connectionLost } = useRealtimeBookings(
     warehouse?.id ?? null,
+    selectedDate,
     setBookings
   );
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
@@ -36,6 +37,10 @@ export default function DashboardPage() {
 
   const handleBookingClick = useCallback((booking: Booking) => {
     setSelectedBooking(booking);
+  }, []);
+
+  const handleCloseDetail = useCallback(() => {
+    setSelectedBooking(null);
   }, []);
 
   const handleStatusChange = useCallback(
@@ -81,7 +86,7 @@ export default function DashboardPage() {
       <BookingDetail
         booking={selectedBooking}
         open={!!selectedBooking}
-        onClose={() => setSelectedBooking(null)}
+        onClose={handleCloseDetail}
         onStatusChange={handleStatusChange}
         dockName={selectedDockName}
       />

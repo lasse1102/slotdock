@@ -188,8 +188,16 @@ export default function BookingsPage() {
                   {bookings.map((booking) => (
                     <tr
                       key={booking.id}
-                      className="cursor-pointer border-b border-border last:border-b-0 hover:bg-bg"
+                      className="cursor-pointer border-b border-border last:border-b-0 hover:bg-bg focus:bg-bg focus:outline-none"
+                      tabIndex={0}
+                      role="button"
                       onClick={() => setSelectedBooking(booking)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setSelectedBooking(booking);
+                        }
+                      }}
                     >
                       <td className="px-4 py-3 text-text">
                         {formatDate(booking.slot_start)}

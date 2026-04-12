@@ -11,6 +11,7 @@ interface DockTimelineProps {
   bookings: Booking[];
   openingTime: string;
   closingTime: string;
+  timezone: string;
   onBookingClick: (booking: Booking) => void;
 }
 
@@ -71,6 +72,7 @@ function DockTimeline({
   bookings,
   openingTime,
   closingTime,
+  timezone,
   onBookingClick,
 }: DockTimelineProps) {
   const hourMarkers = generateHourMarkers(openingTime, closingTime);
@@ -118,7 +120,8 @@ function DockTimeline({
               const { left, width } = getBookingPosition(
                 booking,
                 openingTime,
-                closingTime
+                closingTime,
+                timezone
               );
               const colors = getStatusColor(booking.status);
               const isCancelled = booking.status === "cancelled";

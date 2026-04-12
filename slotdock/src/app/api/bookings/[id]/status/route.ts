@@ -55,7 +55,16 @@ export async function PATCH(
     );
   }
 
-  const body = await request.json();
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json(
+      { error: "VALIDATION_ERROR", message: "Ungültiger Request-Body" },
+      { status: 400 }
+    );
+  }
+
   const parsed = statusUpdateSchema.safeParse(body);
 
   if (!parsed.success) {

@@ -46,11 +46,10 @@ export async function GET(
   const dateTo = searchParams.get("date_to");
   const dockId = searchParams.get("dock_id");
   const status = searchParams.get("status");
-  const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
-  const perPage = Math.min(
-    100,
-    Math.max(1, parseInt(searchParams.get("per_page") || "50", 10))
-  );
+  const rawPage = parseInt(searchParams.get("page") || "1", 10);
+  const page = Math.max(1, isNaN(rawPage) ? 1 : rawPage);
+  const rawPerPage = parseInt(searchParams.get("per_page") || "50", 10);
+  const perPage = Math.min(100, Math.max(1, isNaN(rawPerPage) ? 50 : rawPerPage));
 
   const tz = warehouse.timezone || "Europe/Berlin";
 
@@ -87,9 +86,23 @@ export async function GET(
     const [yt, mt, dt] = parseDateParts(dateTo);
     dayStartUtc = fromZonedTime(new Date(yf, mf - 1, df, 0, 0, 0), tz);
     dayEndUtc = fromZonedTime(new Date(yt, mt - 1, dt + 1, 0, 0, 0), tz);
+    if (dayStartUtc >= dayEndUtc) {
+      return NextResponse.json(
+        { error: "VALIDATION_ERROR", message: "date_from muss vor date_to liegen" },
+        { status: 400 }
+      );
+    }
   } else {
     return NextResponse.json(
       { error: "VALIDATION_ERROR", message: "date oder date_from/date_to ist erforderlich" },
+      { status: 400 }
+    );
+  }
+
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (dockId && !uuidRegex.test(dockId)) {
+    return NextResponse.json(
+      { error: "VALIDATION_ERROR", message: "Ungültige dock_id" },
       { status: 400 }
     );
   }

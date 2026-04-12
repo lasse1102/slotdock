@@ -109,6 +109,7 @@ function DayView({
             type="date"
             value={selectedDate}
             onChange={(e) => onDateChange(e.target.value)}
+            aria-label="Datum auswählen"
             className="rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-text focus:border-primary focus:outline-none"
           />
         </div>
@@ -165,6 +166,7 @@ function DayView({
               bookings={bookingsByDock.get(dock.id) || []}
               openingTime={warehouse.opening_time}
               closingTime={warehouse.closing_time}
+              timezone={warehouse.timezone}
               onBookingClick={onBookingClick}
             />
           ))}

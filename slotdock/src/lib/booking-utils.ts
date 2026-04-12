@@ -1,3 +1,4 @@
+import { toZonedTime } from "date-fns-tz";
 import type { BookingStatus, Booking } from "@/lib/types";
 
 export function getStatusColor(status: BookingStatus) {
@@ -30,14 +31,16 @@ export function timeToMinutes(timeStr: string): number {
 export function getBookingPosition(
   booking: Booking,
   openingTime: string,
-  closingTime: string
+  closingTime: string,
+  timezone: string
 ): { left: string; width: string } {
   const openingMinutes = timeToMinutes(openingTime);
   const closingMinutes = timeToMinutes(closingTime);
   const totalMinutes = closingMinutes - openingMinutes;
 
-  const start = new Date(booking.slot_start);
-  const end = new Date(booking.slot_end);
+  // Convert UTC timestamps to warehouse timezone for correct positioning
+  const start = toZonedTime(new Date(booking.slot_start), timezone);
+  const end = toZonedTime(new Date(booking.slot_end), timezone);
   const startMinutes = start.getHours() * 60 + start.getMinutes();
   const endMinutes = end.getHours() * 60 + end.getMinutes();
 
