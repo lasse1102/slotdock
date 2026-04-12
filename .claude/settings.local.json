@@ -9,7 +9,9 @@
       "Bash(mkdir -p \"C:/Users/lasse/Documents/Claude Project/slotdock/src/app/api/docks/[id]\")",
       "Bash(gh auth:*)",
       "Bash(git:*)",
-      "Bash(where gh:*)"
+      "Bash(where gh:*)",
+      "Bash(mkdir -p \"C:\\\\Users\\\\lasse\\\\Documents\\\\Claude Project\\\\slotdock\\\\src\\\\app\\\\api\\\\warehouses\\\\[id]\\\\bookings\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\lasse\\\\Documents\\\\Claude Project\\\\slotdock\\\\src\\\\app\\\\api\\\\bookings\\\\[id]\\\\status\")"
     ]
   }
 }
