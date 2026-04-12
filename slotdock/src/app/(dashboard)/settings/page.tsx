@@ -9,7 +9,7 @@ import { Modal } from "@/components/ui/modal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/toast";
 import { useWarehouse } from "@/hooks/use-warehouse";
-import { Copy, Check, RefreshCw } from "lucide-react";
+import { Copy, Check, RefreshCw, Bell, Mail } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
 
@@ -17,6 +17,7 @@ interface ProfileFormValues {
   full_name: string;
   company_name: string;
   phone: string;
+  email: string;
 }
 
 export default function SettingsPage() {
@@ -29,6 +30,10 @@ export default function SettingsPage() {
   const [regenerating, setRegenerating] = useState(false);
   const [bookingToken, setBookingToken] = useState<string | null>(null);
   const [origin, setOrigin] = useState("");
+  const [notifyNewBookings, setNotifyNewBookings] = useState(true);
+  const [notifyToggling, setNotifyToggling] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [emailChangeModal, setEmailChangeModal] = useState<string | null>(null);
 
   const {
     register,
@@ -49,6 +54,9 @@ export default function SettingsPage() {
 
       if (!user) return;
 
+      const newEmail = (user as { new_email?: string }).new_email;
+      if (newEmail) setPendingEmail(newEmail);
+
       const { data } = await supabase
         .from("profiles")
         .select("*")
@@ -61,7 +69,9 @@ export default function SettingsPage() {
           full_name: data.full_name || "",
           company_name: data.company_name || "",
           phone: data.phone || "",
+          email: data.email || "",
         });
+        setNotifyNewBookings(data.notify_new_bookings ?? true);
       }
       setProfileLoading(false);
     }
@@ -81,6 +91,8 @@ export default function SettingsPage() {
 
     try {
       const supabase = createClient();
+
+      // Update profile fields
       const { error } = await supabase
         .from("profiles")
         .update({
@@ -92,6 +104,24 @@ export default function SettingsPage() {
 
       if (error) {
         toast("Fehler beim Speichern des Profils", "error");
+        return;
+      }
+
+      // Handle email change via Supabase Auth
+      const trimmedEmail = data.email.trim().toLowerCase();
+      if (trimmedEmail && trimmedEmail !== profile.email) {
+        const { error: emailError } = await supabase.auth.updateUser(
+          { email: trimmedEmail },
+          { emailRedirectTo: `${window.location.origin}/callback?next=/settings` }
+        );
+
+        if (emailError) {
+          toast("Fehler beim Ändern der E-Mail: " + emailError.message, "error");
+          return;
+        }
+
+        setPendingEmail(trimmedEmail);
+        setEmailChangeModal(trimmedEmail);
         return;
       }
 
@@ -145,6 +175,44 @@ export default function SettingsPage() {
     }
   }
 
+  async function handleNotifyToggle() {
+    if (!profile) return;
+    setNotifyToggling(true);
+    const newValue = !notifyNewBookings;
+
+    // Optimistic update
+    setNotifyNewBookings(newValue);
+
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("profiles")
+        .update({ notify_new_bookings: newValue })
+        .eq("id", profile.id);
+
+      if (error) {
+        // Revert on failure
+        setNotifyNewBookings(!newValue);
+        console.error("Notification toggle error:", error);
+        toast("Fehler beim Speichern der Einstellung. Bitte führen Sie die Datenbank-Migration 005 aus.", "error");
+        return;
+      }
+
+      toast(
+        newValue
+          ? "E-Mail-Benachrichtigungen aktiviert"
+          : "E-Mail-Benachrichtigungen deaktiviert",
+        "success"
+      );
+    } catch {
+      // Revert on failure
+      setNotifyNewBookings(!newValue);
+      toast("Netzwerkfehler", "error");
+    } finally {
+      setNotifyToggling(false);
+    }
+  }
+
   const loading = whLoading || profileLoading;
 
   if (loading) {
@@ -161,6 +229,21 @@ export default function SettingsPage() {
     <div className="mx-auto max-w-2xl space-y-6">
       <h1 className="text-2xl font-bold text-text">Einstellungen</h1>
 
+      {/* Pending email change banner */}
+      {pendingEmail && (
+        <div className="flex items-start gap-3 rounded-[8px] border border-warning bg-warning-light p-4">
+          <Mail size={20} className="mt-0.5 shrink-0 text-warning" />
+          <div className="text-sm text-text">
+            <p className="font-medium">E-Mail-Änderung ausstehend</p>
+            <p className="mt-1 text-text-secondary">
+              Wir haben eine Bestätigungsmail an <strong>{pendingEmail}</strong> gesendet.
+              Je nach Einstellung erhältst du zusätzlich eine Mail an deine aktuelle Adresse.
+              Bitte öffne beide Postfächer und klicke den Bestätigungslink — die Änderung wird erst danach wirksam.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Profile */}
       <Card>
         <h2 className="mb-4 text-lg font-semibold text-text">Profil</h2>
@@ -171,8 +254,9 @@ export default function SettingsPage() {
           <Input
             id="email"
             label="E-Mail"
-            value={profile?.email || ""}
-            disabled
+            type="email"
+            placeholder="ihre@email.de"
+            {...register("email")}
           />
           <Input
             id="full_name"
@@ -239,6 +323,43 @@ export default function SettingsPage() {
         </Card>
       )}
 
+      {/* Notifications */}
+      <Card>
+        <h2 className="mb-4 text-lg font-semibold text-text">
+          Benachrichtigungen
+        </h2>
+        <div className="flex items-center justify-between">
+          <div className="flex items-start gap-3">
+            <Bell size={20} className="mt-0.5 text-text-secondary" />
+            <div>
+              <p className="text-sm font-medium text-text">
+                Neue Buchungen per E-Mail
+              </p>
+              <p className="text-sm text-text-secondary">
+                Sie erhalten eine E-Mail, wenn ein Spediteur einen Slot bucht.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={notifyNewBookings}
+            aria-label="E-Mail-Benachrichtigungen für neue Buchungen"
+            disabled={notifyToggling}
+            onClick={handleNotifyToggle}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50 ${
+              notifyNewBookings ? "bg-primary" : "bg-gray-200"
+            }`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                notifyNewBookings ? "translate-x-5" : "translate-x-0"
+              }`}
+            />
+          </button>
+        </div>
+      </Card>
+
       {/* Subscription placeholder */}
       <Card>
         <h2 className="mb-4 text-lg font-semibold text-text">Abonnement</h2>
@@ -246,6 +367,29 @@ export default function SettingsPage() {
           Abonnement-Verwaltung wird bald verfügbar sein.
         </p>
       </Card>
+
+      {/* Email change confirmation modal */}
+      <Modal
+        open={emailChangeModal !== null}
+        onClose={() => setEmailChangeModal(null)}
+        title="Bestätigungsmail versendet"
+      >
+        <div className="space-y-3 text-sm text-text-secondary">
+          <p>
+            Wir haben einen Bestätigungslink an <strong className="text-text">{emailChangeModal}</strong> gesendet.
+          </p>
+          <p>
+            Bitte öffne dein Postfach und klicke auf den Link, um die neue E-Mail-Adresse zu bestätigen.
+            Supabase kann zusätzlich eine Bestätigungsmail an deine aktuelle Adresse senden — beide müssen dann geklickt werden.
+          </p>
+          <p className="text-xs">
+            Bis zur Bestätigung bleibt deine bisherige E-Mail aktiv.
+          </p>
+        </div>
+        <div className="mt-4 flex justify-end">
+          <Button onClick={() => setEmailChangeModal(null)}>Verstanden</Button>
+        </div>
+      </Modal>
 
       {/* Regenerate confirmation modal */}
       <Modal

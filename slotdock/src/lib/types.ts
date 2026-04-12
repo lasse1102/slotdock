@@ -16,6 +16,7 @@ export interface Profile {
   email: string;
   company_name: string | null;
   phone: string | null;
+  notify_new_bookings: boolean;
   created_at: string;
   updated_at: string;
 }
