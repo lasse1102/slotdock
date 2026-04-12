@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 import { useWarehouse } from "@/hooks/use-warehouse";
 import { useDocks } from "@/hooks/use-docks";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -15,6 +15,38 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Pencil, Trash2, Plus } from "lucide-react";
 import type { Dock } from "@/lib/types";
+
+function ToggleSwitch({
+  checked,
+  onChange,
+  disabled,
+}: {
+  checked: boolean;
+  onChange: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={onChange}
+      disabled={disabled}
+      className={cn(
+        "relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-light",
+        checked ? "bg-primary" : "bg-border",
+        disabled && "cursor-not-allowed opacity-50"
+      )}
+    >
+      <span
+        className={cn(
+          "inline-block h-4 w-4 rounded-full bg-white shadow transition-transform duration-200",
+          checked ? "translate-x-6" : "translate-x-1"
+        )}
+      />
+    </button>
+  );
+}
 
 const dockTypeLabels: Record<string, string> = {
   general: "Allgemein",
@@ -112,6 +144,12 @@ export default function DocksPage() {
         return;
       }
 
+      toast(
+        dock.is_active
+          ? `${dock.name} deaktiviert`
+          : `${dock.name} aktiviert`,
+        "success"
+      );
       refetch();
     } catch {
       toast("Netzwerkfehler", "error");
@@ -208,11 +246,20 @@ export default function DocksPage() {
                     {dock.max_concurrent}
                   </td>
                   <td className="px-4 py-3">
-                    <button onClick={() => handleToggleActive(dock)}>
-                      <Badge variant={dock.is_active ? "confirmed" : "cancelled"}>
+                    <div className="flex items-center gap-2">
+                      <ToggleSwitch
+                        checked={dock.is_active}
+                        onChange={() => handleToggleActive(dock)}
+                      />
+                      <span
+                        className={cn(
+                          "text-xs font-medium",
+                          dock.is_active ? "text-success" : "text-text-secondary"
+                        )}
+                      >
                         {dock.is_active ? "Aktiv" : "Inaktiv"}
-                      </Badge>
-                    </button>
+                      </span>
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-1">
