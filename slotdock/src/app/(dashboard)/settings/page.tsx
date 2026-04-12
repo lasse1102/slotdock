@@ -9,7 +9,7 @@ import { Modal } from "@/components/ui/modal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/toast";
 import { useWarehouse } from "@/hooks/use-warehouse";
-import { Copy, Check, RefreshCw, Bell } from "lucide-react";
+import { Copy, Check, RefreshCw, Bell, Mail } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
 
@@ -32,6 +32,8 @@ export default function SettingsPage() {
   const [origin, setOrigin] = useState("");
   const [notifyNewBookings, setNotifyNewBookings] = useState(true);
   const [notifyToggling, setNotifyToggling] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [emailChangeModal, setEmailChangeModal] = useState<string | null>(null);
 
   const {
     register,
@@ -51,6 +53,9 @@ export default function SettingsPage() {
       } = await supabase.auth.getUser();
 
       if (!user) return;
+
+      const newEmail = (user as { new_email?: string }).new_email;
+      if (newEmail) setPendingEmail(newEmail);
 
       const { data } = await supabase
         .from("profiles")
@@ -105,16 +110,18 @@ export default function SettingsPage() {
       // Handle email change via Supabase Auth
       const trimmedEmail = data.email.trim().toLowerCase();
       if (trimmedEmail && trimmedEmail !== profile.email) {
-        const { error: emailError } = await supabase.auth.updateUser({
-          email: trimmedEmail,
-        });
+        const { error: emailError } = await supabase.auth.updateUser(
+          { email: trimmedEmail },
+          { emailRedirectTo: `${window.location.origin}/callback?next=/settings` }
+        );
 
         if (emailError) {
           toast("Fehler beim Ändern der E-Mail: " + emailError.message, "error");
           return;
         }
 
-        toast("Profil gespeichert. Bitte bestätigen Sie die neue E-Mail-Adresse über den Link in Ihrem Postfach.", "success");
+        setPendingEmail(trimmedEmail);
+        setEmailChangeModal(trimmedEmail);
         return;
       }
 
@@ -221,6 +228,21 @@ export default function SettingsPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <h1 className="text-2xl font-bold text-text">Einstellungen</h1>
+
+      {/* Pending email change banner */}
+      {pendingEmail && (
+        <div className="flex items-start gap-3 rounded-[8px] border border-warning bg-warning-light p-4">
+          <Mail size={20} className="mt-0.5 shrink-0 text-warning" />
+          <div className="text-sm text-text">
+            <p className="font-medium">E-Mail-Änderung ausstehend</p>
+            <p className="mt-1 text-text-secondary">
+              Wir haben eine Bestätigungsmail an <strong>{pendingEmail}</strong> gesendet.
+              Je nach Einstellung erhältst du zusätzlich eine Mail an deine aktuelle Adresse.
+              Bitte öffne beide Postfächer und klicke den Bestätigungslink — die Änderung wird erst danach wirksam.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Profile */}
       <Card>
@@ -345,6 +367,29 @@ export default function SettingsPage() {
           Abonnement-Verwaltung wird bald verfügbar sein.
         </p>
       </Card>
+
+      {/* Email change confirmation modal */}
+      <Modal
+        open={emailChangeModal !== null}
+        onClose={() => setEmailChangeModal(null)}
+        title="Bestätigungsmail versendet"
+      >
+        <div className="space-y-3 text-sm text-text-secondary">
+          <p>
+            Wir haben einen Bestätigungslink an <strong className="text-text">{emailChangeModal}</strong> gesendet.
+          </p>
+          <p>
+            Bitte öffne dein Postfach und klicke auf den Link, um die neue E-Mail-Adresse zu bestätigen.
+            Supabase kann zusätzlich eine Bestätigungsmail an deine aktuelle Adresse senden — beide müssen dann geklickt werden.
+          </p>
+          <p className="text-xs">
+            Bis zur Bestätigung bleibt deine bisherige E-Mail aktiv.
+          </p>
+        </div>
+        <div className="mt-4 flex justify-end">
+          <Button onClick={() => setEmailChangeModal(null)}>Verstanden</Button>
+        </div>
+      </Modal>
 
       {/* Regenerate confirmation modal */}
       <Modal
