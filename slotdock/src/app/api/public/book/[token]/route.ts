@@ -2,9 +2,13 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { createServiceClient } from "@/lib/supabase/service";
 import { rateLimit } from "@/lib/rate-limit";
-import { addMinutes, addDays, isBefore, startOfDay, parseISO, getHours, getMinutes } from "date-fns";
+import { addMinutes, addDays, isBefore, startOfDay, parseISO, getHours, getMinutes, format } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
-import type { Warehouse, Dock, DockSchedule, Booking } from "@/lib/types";
+import { de } from "date-fns/locale";
+import { sendEmail } from "@/lib/email/send";
+import { BookingConfirmationEmail } from "@/lib/email/templates/booking-confirmation";
+import { NewBookingNotificationEmail } from "@/lib/email/templates/new-booking-notification";
+import type { Warehouse, Dock, DockSchedule, Booking, Profile } from "@/lib/types";
 
 const bookingSchema = z.object({
   dock_id: z.string().uuid("dock_id muss eine gültige UUID sein"),
@@ -246,6 +250,9 @@ export async function POST(
 
   const newBooking = bookingRows[0];
 
+  // Fire-and-forget: send emails without blocking the booking response
+  sendBookingEmails(newBooking, wh, activeDock, supabase);
+
   return NextResponse.json(
     {
       booking: formatPublicBooking(newBooking),
@@ -253,4 +260,69 @@ export async function POST(
     },
     { status: 201 }
   );
+}
+
+/**
+ * Send booking confirmation to carrier (if email provided)
+ * and new-booking notification to warehouse owner (if enabled).
+ * Runs async, never blocks the booking response.
+ */
+async function sendBookingEmails(
+  booking: Booking,
+  warehouse: Warehouse,
+  dock: Dock,
+  supabase: ReturnType<typeof createServiceClient>
+) {
+  const tz = warehouse.timezone ?? "Europe/Berlin";
+  const slotStart = toZonedTime(parseISO(booking.slot_start), tz);
+  const slotEnd = toZonedTime(parseISO(booking.slot_end), tz);
+  const dateStr = format(slotStart, "EEEE, d. MMMM yyyy", { locale: de });
+  const timeStr = `${format(slotStart, "HH:mm")} – ${format(slotEnd, "HH:mm")} Uhr`;
+
+  // 1. Booking confirmation to carrier
+  if (booking.carrier_email) {
+    sendEmail({
+      to: booking.carrier_email,
+      subject: `Buchungsbestätigung – ${warehouse.name} am ${format(slotStart, "dd.MM.yyyy")}`,
+      react: BookingConfirmationEmail({
+        warehouseName: warehouse.name,
+        dockName: dock.name,
+        date: dateStr,
+        time: timeStr,
+        confirmationCode: booking.confirmation_code ?? "",
+        carrierCompany: booking.carrier_company,
+        contactName: booking.carrier_contact_name,
+        licensePlate: booking.license_plate,
+        referenceNumber: booking.reference_number,
+      }),
+    }).catch((err) => console.error("Failed to send carrier confirmation email:", err));
+  }
+
+  // 2. New-booking notification to warehouse owner
+  try {
+    const { data: ownerProfile } = await supabase
+      .from("profiles")
+      .select("email, notify_new_bookings")
+      .eq("id", warehouse.owner_id)
+      .single();
+
+    const profile = ownerProfile as (Pick<Profile, "email"> & { notify_new_bookings?: boolean }) | null;
+
+    if (profile?.email && profile.notify_new_bookings !== false) {
+      sendEmail({
+        to: profile.email,
+        subject: `Neue Buchung – ${booking.carrier_company} am ${format(slotStart, "dd.MM.yyyy")}`,
+        react: NewBookingNotificationEmail({
+          warehouseName: warehouse.name,
+          dockName: dock.name,
+          date: dateStr,
+          time: timeStr,
+          carrierCompany: booking.carrier_company,
+          referenceNumber: booking.reference_number,
+        }),
+      }).catch((err) => console.error("Failed to send dispatcher notification email:", err));
+    }
+  } catch (err) {
+    console.error("Failed to fetch owner profile for notification:", err);
+  }
 }

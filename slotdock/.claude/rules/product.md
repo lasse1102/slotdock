@@ -12,6 +12,7 @@ Fortschritt wird in `docs/product-roadmap.md` getrackt. Tasks mit `- [x]` sind e
 - **Phase 1 — Warehouse & Dock Management:** abgeschlossen (6/6 Tasks)
 - **Phase 2 — Public Slot Booking:** abgeschlossen (5/5 Tasks)
 - **Phase 3 — Dashboard & Real-Time Updates:** abgeschlossen (7/7 Tasks)
+- **Phase 4 — Email Notifications:** abgeschlossen (4/4 Tasks)
 
 ## Referenzdokumente
 

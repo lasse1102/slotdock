@@ -9,7 +9,7 @@ import { Modal } from "@/components/ui/modal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/toast";
 import { useWarehouse } from "@/hooks/use-warehouse";
-import { Copy, Check, RefreshCw } from "lucide-react";
+import { Copy, Check, RefreshCw, Bell } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
 
@@ -29,6 +29,8 @@ export default function SettingsPage() {
   const [regenerating, setRegenerating] = useState(false);
   const [bookingToken, setBookingToken] = useState<string | null>(null);
   const [origin, setOrigin] = useState("");
+  const [notifyNewBookings, setNotifyNewBookings] = useState(true);
+  const [notifyToggling, setNotifyToggling] = useState(false);
 
   const {
     register,
@@ -62,6 +64,7 @@ export default function SettingsPage() {
           company_name: data.company_name || "",
           phone: data.phone || "",
         });
+        setNotifyNewBookings(data.notify_new_bookings ?? true);
       }
       setProfileLoading(false);
     }
@@ -142,6 +145,37 @@ export default function SettingsPage() {
       toast("Netzwerkfehler", "error");
     } finally {
       setRegenerating(false);
+    }
+  }
+
+  async function handleNotifyToggle() {
+    if (!profile) return;
+    setNotifyToggling(true);
+    const newValue = !notifyNewBookings;
+
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("profiles")
+        .update({ notify_new_bookings: newValue })
+        .eq("id", profile.id);
+
+      if (error) {
+        toast("Fehler beim Speichern der Einstellung", "error");
+        return;
+      }
+
+      setNotifyNewBookings(newValue);
+      toast(
+        newValue
+          ? "E-Mail-Benachrichtigungen aktiviert"
+          : "E-Mail-Benachrichtigungen deaktiviert",
+        "success"
+      );
+    } catch {
+      toast("Netzwerkfehler", "error");
+    } finally {
+      setNotifyToggling(false);
     }
   }
 
@@ -238,6 +272,43 @@ export default function SettingsPage() {
           </div>
         </Card>
       )}
+
+      {/* Notifications */}
+      <Card>
+        <h2 className="mb-4 text-lg font-semibold text-text">
+          Benachrichtigungen
+        </h2>
+        <div className="flex items-center justify-between">
+          <div className="flex items-start gap-3">
+            <Bell size={20} className="mt-0.5 text-text-secondary" />
+            <div>
+              <p className="text-sm font-medium text-text">
+                Neue Buchungen per E-Mail
+              </p>
+              <p className="text-sm text-text-secondary">
+                Sie erhalten eine E-Mail, wenn ein Spediteur einen Slot bucht.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={notifyNewBookings}
+            aria-label="E-Mail-Benachrichtigungen für neue Buchungen"
+            disabled={notifyToggling}
+            onClick={handleNotifyToggle}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50 ${
+              notifyNewBookings ? "bg-primary" : "bg-gray-200"
+            }`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                notifyNewBookings ? "translate-x-5" : "translate-x-0"
+              }`}
+            />
+          </button>
+        </div>
+      </Card>
 
       {/* Subscription placeholder */}
       <Card>
