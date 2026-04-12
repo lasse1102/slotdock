@@ -2,7 +2,6 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { fromZonedTime } from "date-fns-tz";
-import { addDays } from "date-fns";
 import { BOOKING_STATUSES } from "@/lib/constants";
 
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -58,6 +57,13 @@ export async function GET(
   let dayStartUtc: Date;
   let dayEndUtc: Date;
 
+  // Helper: parse "YYYY-MM-DD" into [year, month, day] to avoid
+  // timezone-dependent Date constructor pitfalls
+  function parseDateParts(d: string): [number, number, number] {
+    const [y, m, dd] = d.split("-").map(Number);
+    return [y, m, dd];
+  }
+
   if (date) {
     const parsed = dateSchema.safeParse(date);
     if (!parsed.success) {
@@ -66,11 +72,9 @@ export async function GET(
         { status: 400 }
       );
     }
-    dayStartUtc = fromZonedTime(`${date}T00:00:00`, tz);
-    dayEndUtc = fromZonedTime(
-      `${addDays(new Date(`${date}T00:00:00`), 1).toISOString().slice(0, 10)}T00:00:00`,
-      tz
-    );
+    const [y, m, d] = parseDateParts(date);
+    dayStartUtc = fromZonedTime(new Date(y, m - 1, d, 0, 0, 0), tz);
+    dayEndUtc = fromZonedTime(new Date(y, m - 1, d + 1, 0, 0, 0), tz);
   } else if (dateFrom && dateTo) {
     const parsed = dateRangeSchema.safeParse({ date_from: dateFrom, date_to: dateTo });
     if (!parsed.success) {
@@ -79,11 +83,10 @@ export async function GET(
         { status: 400 }
       );
     }
-    dayStartUtc = fromZonedTime(`${dateFrom}T00:00:00`, tz);
-    dayEndUtc = fromZonedTime(
-      `${addDays(new Date(`${dateTo}T00:00:00`), 1).toISOString().slice(0, 10)}T00:00:00`,
-      tz
-    );
+    const [yf, mf, df] = parseDateParts(dateFrom);
+    const [yt, mt, dt] = parseDateParts(dateTo);
+    dayStartUtc = fromZonedTime(new Date(yf, mf - 1, df, 0, 0, 0), tz);
+    dayEndUtc = fromZonedTime(new Date(yt, mt - 1, dt + 1, 0, 0, 0), tz);
   } else {
     return NextResponse.json(
       { error: "VALIDATION_ERROR", message: "date oder date_from/date_to ist erforderlich" },
