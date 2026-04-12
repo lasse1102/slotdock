@@ -2,7 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { createServiceClient } from "@/lib/supabase/service";
 import { rateLimit } from "@/lib/rate-limit";
-import { parse, addDays, addMinutes, startOfDay, isBefore } from "date-fns";
+import { addDays, addMinutes, startOfDay, isBefore } from "date-fns";
+import { toZonedTime, fromZonedTime } from "date-fns-tz";
 import type { Warehouse, Dock, DockSchedule, Booking } from "@/lib/types";
 
 const dateSchema = z
@@ -59,10 +60,17 @@ export async function GET(
     );
   }
 
-  const requestedDate = parse(dateParam, "yyyy-MM-dd", new Date());
-  const today = startOfDay(new Date());
+  const tz = wh.timezone ?? "Europe/Berlin";
 
-  if (isBefore(requestedDate, today)) {
+  // Parse date in the warehouse's timezone
+  const [year, month, day] = dateParam.split("-").map(Number);
+  const requestedDate = fromZonedTime(new Date(year, month - 1, day), tz);
+  const nowInTz = toZonedTime(new Date(), tz);
+  const today = startOfDay(nowInTz);
+
+  // Compare in warehouse timezone
+  const requestedDateInTz = toZonedTime(requestedDate, tz);
+  if (isBefore(startOfDay(requestedDateInTz), today)) {
     return NextResponse.json(
       { error: "DATE_IN_PAST", message: "Das Datum liegt in der Vergangenheit" },
       { status: 400 }
@@ -123,19 +131,21 @@ export async function GET(
 
   // Fetch non-cancelled bookings that overlap the requested date across all active docks
   // Use overlap detection: slot_start < day_end AND slot_end > day_start
-  const dayStart = `${dateParam}T00:00:00`;
+  // Convert day boundaries to UTC using the warehouse timezone
+  const dayStartUtc = fromZonedTime(new Date(year, month - 1, day, 0, 0, 0), tz).toISOString();
+  const dayEndUtc = fromZonedTime(new Date(year, month - 1, day, 23, 59, 59, 999), tz).toISOString();
 
   const { data: bookings } = await supabase
     .from("bookings")
     .select("*")
     .in("dock_id", dockIds)
     .neq("status", "cancelled")
-    .lt("slot_start", `${dateParam}T23:59:59.999`)
-    .gt("slot_end", dayStart);
+    .lt("slot_start", dayEndUtc)
+    .gt("slot_end", dayStartUtc);
 
   const existingBookings = (bookings ?? []) as Booking[];
 
-  // Generate slots for each dock
+  // Generate slots for each dock — compare UTC timestamps
   const now = new Date();
   const slots: {
     dock_id: string;
@@ -158,15 +168,16 @@ export async function GET(
     const slotDuration =
       schedule?.slot_duration_minutes ?? wh.default_slot_duration_minutes;
 
-    // Parse times into Date objects for the requested date
+    // Parse times into Date objects for the requested date in warehouse timezone
     const [openH, openM] = openingTime.split(":").map(Number);
     const [closeH, closeM] = closingTime.split(":").map(Number);
 
-    let slotStart = new Date(requestedDate);
-    slotStart.setHours(openH, openM, 0, 0);
+    // Build wall-clock times in warehouse timezone, then convert to UTC
+    const openingLocal = new Date(year, month - 1, day, openH, openM, 0, 0);
+    let slotStart = fromZonedTime(openingLocal, tz);
 
-    const closingDate = new Date(requestedDate);
-    closingDate.setHours(closeH, closeM, 0, 0);
+    const closingLocal = new Date(year, month - 1, day, closeH, closeM, 0, 0);
+    const closingDate = fromZonedTime(closingLocal, tz);
 
     // Generate slots in increments
     while (true) {

@@ -6,16 +6,20 @@ interface RateLimitEntry {
 }
 
 const store = new Map<string, RateLimitEntry>();
+let lastCleanup = Date.now();
+const CLEANUP_INTERVAL = 60_000;
 
-// Clean up expired entries periodically
-setInterval(() => {
+/** Lazy cleanup: purge expired entries when enough time has passed */
+function cleanupIfNeeded() {
   const now = Date.now();
+  if (now - lastCleanup < CLEANUP_INTERVAL) return;
+  lastCleanup = now;
   for (const [key, entry] of store) {
     if (entry.resetAt <= now) {
       store.delete(key);
     }
   }
-}, 60_000);
+}
 
 interface RateLimitOptions {
   /** Max requests per window */
@@ -32,6 +36,8 @@ export function rateLimit(
   request: NextRequest,
   options: RateLimitOptions
 ): NextResponse | null {
+  cleanupIfNeeded();
+
   const ip =
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
     request.headers.get("x-real-ip") ??

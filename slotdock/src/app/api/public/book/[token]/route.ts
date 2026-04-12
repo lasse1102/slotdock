@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createServiceClient } from "@/lib/supabase/service";
 import { rateLimit } from "@/lib/rate-limit";
 import { addMinutes, addDays, isBefore, startOfDay, parseISO, getHours, getMinutes } from "date-fns";
+import { toZonedTime } from "date-fns-tz";
 import type { Warehouse, Dock, DockSchedule, Booking } from "@/lib/types";
 
 const bookingSchema = z.object({
@@ -154,6 +155,9 @@ export async function POST(
   // Calculate slot_end using effective duration
   const slotEnd = addMinutes(slotStart, effectiveSlotDuration);
 
+  // Use warehouse timezone for business rule checks
+  const tz = wh.timezone ?? "Europe/Berlin";
+
   // 5. Validate slot_start is not in the past
   const now = new Date();
   if (isBefore(slotStart, now)) {
@@ -163,10 +167,12 @@ export async function POST(
     );
   }
 
-  // 6. Validate not beyond max_advance_booking_days
-  const today = startOfDay(now);
+  // 6. Validate not beyond max_advance_booking_days (in warehouse timezone)
+  const nowInTz = toZonedTime(now, tz);
+  const today = startOfDay(nowInTz);
+  const slotStartInTz = toZonedTime(slotStart, tz);
   const maxDate = addDays(today, wh.max_advance_booking_days + 1);
-  if (!isBefore(slotStart, maxDate)) {
+  if (!isBefore(slotStartInTz, maxDate)) {
     return NextResponse.json(
       {
         error: "DATE_TOO_FAR",
@@ -176,19 +182,16 @@ export async function POST(
     );
   }
 
-  // 7. Validate slot falls within effective opening hours
-  const slotHour = getHours(slotStart);
-  const slotMinute = getMinutes(slotStart);
-  const slotTimeMinutes = slotHour * 60 + slotMinute;
+  // 7. Validate slot falls within effective opening hours (in warehouse timezone)
+  const slotEndInTz = toZonedTime(slotEnd, tz);
+  const slotTimeMinutes = getHours(slotStartInTz) * 60 + getMinutes(slotStartInTz);
 
   const [openH, openM] = effectiveOpeningTime.split(":").map(Number);
   const [closeH, closeM] = effectiveClosingTime.split(":").map(Number);
   const openingMinutes = openH * 60 + openM;
   const closingMinutes = closeH * 60 + closeM;
 
-  const slotEndHour = getHours(slotEnd);
-  const slotEndMinute = getMinutes(slotEnd);
-  const slotEndTimeMinutes = slotEndHour * 60 + slotEndMinute;
+  const slotEndTimeMinutes = getHours(slotEndInTz) * 60 + getMinutes(slotEndInTz);
 
   if (slotTimeMinutes < openingMinutes || slotEndTimeMinutes > closingMinutes) {
     return NextResponse.json(
