@@ -15,10 +15,38 @@ const jetbrainsMono = JetBrains_Mono({
   weight: ["400"],
 });
 
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://slotdock.app";
+const siteDescription =
+  "SlotDock ist die Online-Rampenbuchung für Fulfillment-Unternehmen — Spediteure reservieren Zeitfenster selbst, das Lager plant stressfrei.";
+
 export const metadata: Metadata = {
-  title: "SlotDock — Online-Rampenbuchung",
-  description:
-    "SlotDock ist die Online-Rampenbuchung für Fulfillment-Unternehmen — Spediteure reservieren Zeitfenster selbst, das Lager plant stressfrei.",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "SlotDock — Online-Rampenbuchung für Fulfillment-Unternehmen",
+    template: "%s | SlotDock",
+  },
+  description: siteDescription,
+  icons: {
+    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+  },
+  openGraph: {
+    type: "website",
+    locale: "de_DE",
+    url: siteUrl,
+    siteName: "SlotDock",
+    title: "SlotDock — Online-Rampenbuchung für Fulfillment-Unternehmen",
+    description: siteDescription,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "SlotDock — Online-Rampenbuchung",
+    description: siteDescription,
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({
