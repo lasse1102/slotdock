@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { apiError, unauthorized, parseJsonBody } from "@/lib/api-errors";
 
 const createWarehouseSchema = z.object({
   name: z.string().min(1, "Name ist erforderlich").max(255),
@@ -27,7 +28,7 @@ export async function GET() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
+    return unauthorized();
   }
 
   const { data: warehouses, error } = await supabase
@@ -37,10 +38,7 @@ export async function GET() {
     .order("created_at", { ascending: false });
 
   if (error) {
-    return NextResponse.json(
-      { error: "FETCH_FAILED", message: error.message },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", error.message, 500);
   }
 
   return NextResponse.json({ warehouses });
@@ -54,21 +52,18 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
+    return unauthorized();
   }
 
-  const body = await request.json();
+  const [body, parseError] = await parseJsonBody(request);
+  if (parseError) return parseError;
+
   const parsed = createWarehouseSchema.safeParse(body);
 
   if (!parsed.success) {
-    return NextResponse.json(
-      {
-        error: "VALIDATION_ERROR",
-        message: "Ungültige Eingabedaten",
-        details: parsed.error.flatten().fieldErrors,
-      },
-      { status: 400 }
-    );
+    return apiError("VALIDATION_ERROR", "Ungültige Eingabedaten", 400, {
+      details: parsed.error.flatten().fieldErrors,
+    });
   }
 
   const { data: warehouse, error } = await supabase
@@ -78,10 +73,7 @@ export async function POST(request: Request) {
     .single();
 
   if (error) {
-    return NextResponse.json(
-      { error: "CREATE_FAILED", message: error.message },
-      { status: 500 }
-    );
+    return apiError("CREATE_FAILED", error.message, 500);
   }
 
   return NextResponse.json({ warehouse }, { status: 201 });

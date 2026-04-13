@@ -194,7 +194,7 @@ export default function SettingsPage() {
         // Revert on failure
         setNotifyNewBookings(!newValue);
         console.error("Notification toggle error:", error);
-        toast("Fehler beim Speichern der Einstellung. Bitte führen Sie die Datenbank-Migration 005 aus.", "error");
+        toast("Einstellung konnte nicht gespeichert werden", "error");
         return;
       }
 

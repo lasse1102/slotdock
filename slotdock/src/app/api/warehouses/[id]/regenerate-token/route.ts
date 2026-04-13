@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { apiError, unauthorized } from "@/lib/api-errors";
 
 export async function POST(
   _request: NextRequest,
@@ -13,7 +14,7 @@ export async function POST(
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
+    return unauthorized();
   }
 
   const { data: warehouse, error } = await supabase
@@ -25,10 +26,7 @@ export async function POST(
     .single();
 
   if (error || !warehouse) {
-    return NextResponse.json(
-      { error: "NOT_FOUND", message: "Lager nicht gefunden" },
-      { status: 404 }
-    );
+    return apiError("NOT_FOUND", "Lager nicht gefunden", 404);
   }
 
   return NextResponse.json({ booking_token: warehouse.booking_token });

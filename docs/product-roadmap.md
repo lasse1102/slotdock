@@ -280,7 +280,7 @@
 **Phase prompt — give this to your coding agent:**
 > "Read docs/product-roadmap.md and find Phase 6. Then read only the Reference sections listed above from docs/prd.md and docs/product-vision.md. Continue from the first unchecked task. After each task, mark it complete in the roadmap. When all tasks are done, create a branch `phase-6/polish-and-launch-prep`, commit, push, and open a PR for review."
 
-- [ ] **TASK-039** — Comprehensive error handling pass
+- [x] **TASK-039** — Comprehensive error handling pass
   Files: All API routes, all form components
   Notes: Per PRD § 12. Edge Cases. Audit every API route for: proper error responses (400/401/403/404/409/500), consistent error format `{ error: CODE, message: string }`. Audit every form for: network error handling (show toast, preserve input), validation error display (inline under fields). Add global error boundary component for unexpected errors. Verify: Disconnect network → submit form → see friendly error. Invalid API calls → proper error codes.
 

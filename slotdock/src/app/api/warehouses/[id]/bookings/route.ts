@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { fromZonedTime } from "date-fns-tz";
 import { BOOKING_STATUSES } from "@/lib/constants";
+import { apiError, unauthorized } from "@/lib/api-errors";
 
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const dateRangeSchema = z.object({
@@ -22,7 +23,7 @@ export async function GET(
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
+    return unauthorized();
   }
 
   // Verify warehouse ownership
@@ -34,10 +35,7 @@ export async function GET(
     .single();
 
   if (!warehouse) {
-    return NextResponse.json(
-      { error: "NOT_FOUND", message: "Lager nicht gefunden" },
-      { status: 404 }
-    );
+    return apiError("NOT_FOUND", "Lager nicht gefunden", 404);
   }
 
   const searchParams = request.nextUrl.searchParams;
@@ -140,10 +138,7 @@ export async function GET(
   const { data: bookings, error, count } = await query;
 
   if (error) {
-    return NextResponse.json(
-      { error: "FETCH_FAILED", message: error.message },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", error.message, 500);
   }
 
   return NextResponse.json({

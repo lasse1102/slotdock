@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { apiError, unauthorized, parseJsonBody } from "@/lib/api-errors";
 
 const updateDockSchema = z.object({
   name: z.string().min(1).max(100).optional(),
@@ -37,29 +38,23 @@ export async function PATCH(
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
+    return unauthorized();
   }
 
   const dock = await verifyDockOwnership(supabase, id, user.id);
   if (!dock) {
-    return NextResponse.json(
-      { error: "NOT_FOUND", message: "Rampe nicht gefunden" },
-      { status: 404 }
-    );
+    return apiError("NOT_FOUND", "Rampe nicht gefunden", 404);
   }
 
-  const body = await request.json();
+  const [body, parseError] = await parseJsonBody(request);
+  if (parseError) return parseError;
+
   const parsed = updateDockSchema.safeParse(body);
 
   if (!parsed.success) {
-    return NextResponse.json(
-      {
-        error: "VALIDATION_ERROR",
-        message: "Ungültige Eingabedaten",
-        details: parsed.error.flatten().fieldErrors,
-      },
-      { status: 400 }
-    );
+    return apiError("VALIDATION_ERROR", "Ungültige Eingabedaten", 400, {
+      details: parsed.error.flatten().fieldErrors,
+    });
   }
 
   const { data: updatedDock, error } = await supabase
@@ -71,18 +66,13 @@ export async function PATCH(
 
   if (error) {
     if (error.code === "23505") {
-      return NextResponse.json(
-        {
-          error: "DUPLICATE_NAME",
-          message: "Eine Rampe mit diesem Namen existiert bereits in diesem Lager",
-        },
-        { status: 400 }
+      return apiError(
+        "DUPLICATE_NAME",
+        "Eine Rampe mit diesem Namen existiert bereits in diesem Lager",
+        400
       );
     }
-    return NextResponse.json(
-      { error: "UPDATE_FAILED", message: error.message },
-      { status: 500 }
-    );
+    return apiError("UPDATE_FAILED", error.message, 500);
   }
 
   return NextResponse.json({ dock: updatedDock });
@@ -100,15 +90,12 @@ export async function DELETE(
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
+    return unauthorized();
   }
 
   const dock = await verifyDockOwnership(supabase, id, user.id);
   if (!dock) {
-    return NextResponse.json(
-      { error: "NOT_FOUND", message: "Rampe nicht gefunden" },
-      { status: 404 }
-    );
+    return apiError("NOT_FOUND", "Rampe nicht gefunden", 404);
   }
 
   // Check for active bookings
@@ -119,22 +106,17 @@ export async function DELETE(
     .neq("status", "cancelled");
 
   if (count && count > 0) {
-    return NextResponse.json(
-      {
-        error: "DOCK_HAS_BOOKINGS",
-        message: "Rampe hat aktive Buchungen und kann nicht gelöscht werden",
-      },
-      { status: 409 }
+    return apiError(
+      "DOCK_HAS_BOOKINGS",
+      "Rampe hat aktive Buchungen und kann nicht gelöscht werden",
+      409
     );
   }
 
   const { error } = await supabase.from("docks").delete().eq("id", id);
 
   if (error) {
-    return NextResponse.json(
-      { error: "DELETE_FAILED", message: error.message },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", error.message, 500);
   }
 
   return NextResponse.json({ success: true });
