@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { apiError, unauthorized, parseJsonBody } from "@/lib/api-errors";
 
 const createDockSchema = z.object({
   name: z.string().min(1, "Name ist erforderlich").max(100),
@@ -20,7 +21,7 @@ export async function GET(
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
+    return unauthorized();
   }
 
   // Verify warehouse ownership
@@ -32,10 +33,7 @@ export async function GET(
     .single();
 
   if (!warehouse) {
-    return NextResponse.json(
-      { error: "NOT_FOUND", message: "Lager nicht gefunden" },
-      { status: 404 }
-    );
+    return apiError("NOT_FOUND", "Lager nicht gefunden", 404);
   }
 
   const { data: docks, error } = await supabase
@@ -45,10 +43,7 @@ export async function GET(
     .order("sort_order", { ascending: true });
 
   if (error) {
-    return NextResponse.json(
-      { error: "FETCH_FAILED", message: error.message },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", error.message, 500);
   }
 
   return NextResponse.json({ docks });
@@ -66,7 +61,7 @@ export async function POST(
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
+    return unauthorized();
   }
 
   // Verify warehouse ownership
@@ -78,24 +73,18 @@ export async function POST(
     .single();
 
   if (!warehouse) {
-    return NextResponse.json(
-      { error: "NOT_FOUND", message: "Lager nicht gefunden" },
-      { status: 404 }
-    );
+    return apiError("NOT_FOUND", "Lager nicht gefunden", 404);
   }
 
-  const body = await request.json();
+  const [body, parseError] = await parseJsonBody(request);
+  if (parseError) return parseError;
+
   const parsed = createDockSchema.safeParse(body);
 
   if (!parsed.success) {
-    return NextResponse.json(
-      {
-        error: "VALIDATION_ERROR",
-        message: "Ungültige Eingabedaten",
-        details: parsed.error.flatten().fieldErrors,
-      },
-      { status: 400 }
-    );
+    return apiError("VALIDATION_ERROR", "Ungültige Eingabedaten", 400, {
+      details: parsed.error.flatten().fieldErrors,
+    });
   }
 
   const { data: dock, error } = await supabase
@@ -106,18 +95,13 @@ export async function POST(
 
   if (error) {
     if (error.code === "23505") {
-      return NextResponse.json(
-        {
-          error: "DUPLICATE_NAME",
-          message: "Eine Rampe mit diesem Namen existiert bereits in diesem Lager",
-        },
-        { status: 400 }
+      return apiError(
+        "DUPLICATE_NAME",
+        "Eine Rampe mit diesem Namen existiert bereits in diesem Lager",
+        400
       );
     }
-    return NextResponse.json(
-      { error: "CREATE_FAILED", message: error.message },
-      { status: 500 }
-    );
+    return apiError("CREATE_FAILED", error.message, 500);
   }
 
   return NextResponse.json({ dock }, { status: 201 });

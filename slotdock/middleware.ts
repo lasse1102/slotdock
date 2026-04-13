@@ -29,7 +29,7 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const publicRoutes = ["/", "/login", "/signup", "/book", "/callback"];
+  const publicRoutes = ["/", "/login", "/signup", "/book", "/callback", "/impressum", "/datenschutz"];
   const isPublicRoute = publicRoutes.some((route) =>
     request.nextUrl.pathname.startsWith(route)
   );

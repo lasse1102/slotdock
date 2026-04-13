@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { apiError, unauthorized, parseJsonBody } from "@/lib/api-errors";
 
 const updateWarehouseSchema = z.object({
   name: z.string().min(1).max(255).optional(),
@@ -32,7 +33,7 @@ export async function GET(
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
+    return unauthorized();
   }
 
   const { data: warehouse, error } = await supabase
@@ -43,10 +44,7 @@ export async function GET(
     .single();
 
   if (error || !warehouse) {
-    return NextResponse.json(
-      { error: "NOT_FOUND", message: "Lager nicht gefunden" },
-      { status: 404 }
-    );
+    return apiError("NOT_FOUND", "Lager nicht gefunden", 404);
   }
 
   return NextResponse.json({ warehouse });
@@ -64,21 +62,18 @@ export async function PATCH(
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
+    return unauthorized();
   }
 
-  const body = await request.json();
+  const [body, parseError] = await parseJsonBody(request);
+  if (parseError) return parseError;
+
   const parsed = updateWarehouseSchema.safeParse(body);
 
   if (!parsed.success) {
-    return NextResponse.json(
-      {
-        error: "VALIDATION_ERROR",
-        message: "Ungültige Eingabedaten",
-        details: parsed.error.flatten().fieldErrors,
-      },
-      { status: 400 }
-    );
+    return apiError("VALIDATION_ERROR", "Ungültige Eingabedaten", 400, {
+      details: parsed.error.flatten().fieldErrors,
+    });
   }
 
   const { data: warehouse, error } = await supabase
@@ -90,9 +85,10 @@ export async function PATCH(
     .single();
 
   if (error || !warehouse) {
-    return NextResponse.json(
-      { error: "UPDATE_FAILED", message: "Lager nicht gefunden oder Fehler beim Aktualisieren" },
-      { status: 404 }
+    return apiError(
+      "UPDATE_FAILED",
+      "Lager nicht gefunden oder Fehler beim Aktualisieren",
+      404
     );
   }
 

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge, variantLabels } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
-import { ToastContainer, toast } from "@/components/ui/toast";
+import { toast } from "@/components/ui/toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select } from "@/components/ui/select";
 import { useState } from "react";
@@ -155,7 +155,6 @@ export default function DevPage() {
         </div>
       </section>
 
-      <ToastContainer />
     </div>
   );
 }
