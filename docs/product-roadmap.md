@@ -284,7 +284,7 @@
   Files: All API routes, all form components
   Notes: Per PRD § 12. Edge Cases. Audit every API route for: proper error responses (400/401/403/404/409/500), consistent error format `{ error: CODE, message: string }`. Audit every form for: network error handling (show toast, preserve input), validation error display (inline under fields). Add global error boundary component for unexpected errors. Verify: Disconnect network → submit form → see friendly error. Invalid API calls → proper error codes.
 
-- [ ] **TASK-040** — Empty states and loading states for all pages
+- [x] **TASK-040** — Empty states and loading states for all pages
   Files: `src/app/(dashboard)/page.tsx`, `src/app/(dashboard)/docks/page.tsx`, `src/app/(dashboard)/bookings/page.tsx`
   Notes: Per PRD § 8. UI/UX every screen has defined empty and loading states. Dashboard empty: "Heute keine Buchungen. Buchungslink an Spediteure senden?" + copy button. Docks empty: "Noch keine Rampen. Erste Rampe hinzufügen?" + add button. Bookings empty: "Keine Buchungen gefunden." Loading: skeleton screens matching content shape (use Skeleton component). Every page must have both states implemented. Verify: Delete all test data → see empty states. Throttle network → see skeletons.
 

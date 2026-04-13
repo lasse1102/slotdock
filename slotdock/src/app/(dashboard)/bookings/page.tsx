@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate, formatSlotTime } from "@/lib/utils";
 import { getStatusLabel } from "@/lib/booking-utils";
 import { BOOKING_STATUSES } from "@/lib/constants";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Inbox } from "lucide-react";
 import type { Booking, BookingStatus } from "@/lib/types";
 
 const STATUS_OPTIONS: { value: string; label: string }[] = [
@@ -156,7 +156,8 @@ export default function BookingsPage() {
       {!loading && !error && (
         <>
           {bookings.length === 0 ? (
-            <div className="flex items-center justify-center py-16">
+            <div className="flex flex-col items-center gap-4 rounded-lg border border-dashed border-border py-16">
+              <Inbox className="h-12 w-12 text-text-secondary" />
               <p className="text-text-secondary">Keine Buchungen gefunden.</p>
             </div>
           ) : (

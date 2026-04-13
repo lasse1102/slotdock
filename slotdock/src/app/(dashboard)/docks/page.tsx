@@ -13,7 +13,7 @@ import { toast } from "@/components/ui/toast";
 import { DOCK_TYPES } from "@/lib/constants";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Pencil, Trash2, Plus } from "lucide-react";
+import { Pencil, Trash2, Plus, PackageOpen } from "lucide-react";
 import type { Dock } from "@/lib/types";
 
 function ToggleSwitch({
@@ -200,11 +200,13 @@ export default function DocksPage() {
           ))}
         </div>
       ) : docks.length === 0 ? (
-        <div className="rounded-[8px] border border-border bg-surface p-12 text-center">
+        <div className="flex flex-col items-center gap-4 rounded-lg border border-dashed border-border py-16">
+          <PackageOpen className="h-12 w-12 text-text-secondary" />
           <p className="text-text-secondary">
             Noch keine Rampen. Erste Rampe hinzufügen?
           </p>
-          <Button className="mt-4" onClick={openCreate}>
+          <Button onClick={openCreate}>
+            <Plus size={16} className="mr-1.5" />
             Rampe hinzufügen
           </Button>
         </div>
