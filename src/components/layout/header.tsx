@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { Menu, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -10,13 +9,13 @@ interface HeaderProps {
 }
 
 function Header({ warehouseName, onMenuClick }: HeaderProps) {
-  const router = useRouter();
 
   async function handleLogout() {
     const supabase = createClient();
     await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
+    // Full page navigation clears all client state and avoids
+    // Turbopack panic from router.push + router.refresh race condition
+    window.location.href = "/login";
   }
 
   return (
